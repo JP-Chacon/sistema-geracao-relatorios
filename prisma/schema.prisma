@@ -1,0 +1,98 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StatusRelatorio {
+  RASCUNHO
+  FINALIZADO
+}
+
+model User {
+  id         String      @id @default(uuid())
+  email      String      @unique
+  password   String
+  name       String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  relatorios Relatorio[]
+
+  @@map("users")
+}
+
+enum TipoRelatorio {
+  INSPECAO
+  VISTORIA
+  LAUDO
+  OUTRO
+}
+
+model Relatorio {
+  id                String          @id @default(uuid())
+  numeroRelatorio   String?         @unique // Gerado automaticamente no backend
+  titulo            String
+  descricao         String?         // Campo existente - mantido
+  tipoRelatorio     TipoRelatorio?  // Novo campo opcional
+  observacoesGerais String?         // Novo campo opcional
+  conclusao         String?         // Novo campo opcional
+  recomendacoes     String?         // Novo campo opcional
+  data              DateTime        @default(now())
+  status            StatusRelatorio @default(RASCUNHO)
+  userId            String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itens             ItemRelatorio[]
+  fotos             Foto[]
+
+  @@index([userId])
+  @@index([data])
+  @@index([numeroRelatorio])
+  @@map("relatorios")
+}
+
+model ItemRelatorio {
+  id          String    @id @default(uuid())
+  descricao   String
+  concluido   Boolean   @default(false)
+  ordem       Int
+  observacao  String?
+  relatorioId String
+  createdAt   DateTime  @default(now())
+  
+  relatorio   Relatorio @relation(fields: [relatorioId], references: [id], onDelete: Cascade)
+  fotos       Foto[]
+
+  @@index([relatorioId])
+  @@map("itens_relatorio")
+}
+
+model Foto {
+  id            String         @id @default(uuid())
+  url           String
+  nome          String
+  descricao     String?
+  ordem         Int            @default(0)
+  relatorioId   String
+  itemRelatorioId String?
+  createdAt     DateTime       @default(now())
+  
+  relatorio     Relatorio      @relation(fields: [relatorioId], references: [id], onDelete: Cascade)
+  itemRelatorio ItemRelatorio? @relation(fields: [itemRelatorioId], references: [id], onDelete: SetNull)
+
+  @@index([relatorioId])
+  @@index([itemRelatorioId])
+  @@map("fotos")
+}
+
+
+
+
+
