@@ -163,9 +163,9 @@ Os PDFs são gerados usando PDFKit e incluem:
 
 Este projeto está sob a licença MIT.
 
-## 👨‍💻 Desenvolvido por João Pedro Chacon de Souza
+## 👨‍💻 Desenvolvimento
 
-Sistema desenvolvido seguindo as melhores práticas de desenvolvimento web moderno.
+Sistema desenvolvido por João Pedro Chacon de Souza
 
 
 
