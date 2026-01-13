@@ -150,14 +150,6 @@ Os PDFs são gerados usando PDFKit e incluem:
 - `npm run db:studio` - Abre Prisma Studio
 - `npm run db:generate` - Gera o cliente Prisma
 
-## 🔧 Melhorias Futuras
-
-- [ ] Integração com Supabase Storage para fotos
-- [ ] Inserção de imagens reais no PDF
-- [ ] Filtros e busca avançada
-- [ ] Exportação em outros formatos
-- [ ] Compartilhamento de relatórios
-- [ ] Templates de relatórios
 
 ## 📄 Licença
 
