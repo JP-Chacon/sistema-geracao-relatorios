@@ -16,13 +16,27 @@ import { ItemList } from './ItemList'
 import { PhotoUpload, type Photo } from './PhotoUpload'
 
 const relatorioSchema = z.object({
-  titulo: z.string().min(3, 'Título deve ter no mínimo 3 caracteres'),
-  descricao: z.string().optional(),
-  tipoRelatorio: z.enum(['INSPECAO', 'VISTORIA', 'LAUDO', 'OUTRO']).optional(),
-  observacoesGerais: z.string().optional(),
-  conclusao: z.string().optional(),
-  recomendacoes: z.string().optional(),
-  data: z.string(),
+  titulo: z
+    .string()
+    .min(1, 'Título é obrigatório')
+    .refine((val) => val.trim().length >= 3, 'Título deve ter no mínimo 3 caracteres'),
+  descricao: z
+    .string()
+    .min(1, 'Descrição é obrigatória')
+    .refine((val) => val.trim().length > 0, 'Descrição não pode estar vazia'),
+  tipoRelatorio: z.enum(['INSPECAO', 'VISTORIA', 'LAUDO', 'OUTRO'], {
+    required_error: 'Tipo de relatório é obrigatório',
+  }),
+  observacoesGerais: z
+    .string()
+    .min(1, 'Observações gerais são obrigatórias')
+    .refine((val) => val.trim().length > 0, 'Observações gerais não podem estar vazias'),
+  conclusao: z.string().optional(), // Único campo opcional
+  recomendacoes: z
+    .string()
+    .min(1, 'Recomendações são obrigatórias')
+    .refine((val) => val.trim().length > 0, 'Recomendações não podem estar vazias'),
+  data: z.string().min(1, 'Data é obrigatória'),
   status: z.enum(['RASCUNHO', 'FINALIZADO']),
 })
 
@@ -69,8 +83,10 @@ export function RelatorioForm({ relatorioId, initialData }: RelatorioFormProps) 
     handleSubmit,
     formState: { errors },
     setValue,
+    trigger,
   } = useForm<RelatorioFormData>({
     resolver: zodResolver(relatorioSchema),
+    mode: 'onChange', // Validação em tempo real
     defaultValues: initialData || {
       titulo: '',
       descricao: '',
@@ -193,8 +209,25 @@ export function RelatorioForm({ relatorioId, initialData }: RelatorioFormProps) 
       // IMPORTANTE: Usa photos e items do estado ATUAL
       // React garante que o estado é sempre atualizado, mas para garantir,
       // vamos criar uma cópia imutável dos arrays
+      const currentItems = [...items]
       let currentPhotos = [...photos] // Cria cópia imutável
-      const currentItems = [...items] // Cria cópia imutável
+
+      // Validação: pelo menos 1 item no checklist
+      if (currentItems.length === 0) {
+        setError('É necessário adicionar pelo menos 1 item no checklist')
+        setIsLoading(false)
+        return
+      }
+
+      // Validação: pelo menos 1 foto válida
+      const fotosValidas = currentPhotos.filter(
+        (photo) => photo.url && photo.url.trim() !== ''
+      )
+      if (fotosValidas.length === 0) {
+        setError('É necessário adicionar pelo menos 1 foto')
+        setIsLoading(false)
+        return
+      }
 
       // PASSO 0: Deduplica fotos antes de processar
       // Remove duplicatas baseadas em URL (para fotos sem ID) ou ID (para fotos com ID)
@@ -706,7 +739,7 @@ export function RelatorioForm({ relatorioId, initialData }: RelatorioFormProps) 
       </div>
 
       <Textarea
-        label="Descrição"
+        label="Descrição *"
         {...register('descricao')}
         error={errors.descricao?.message}
         placeholder="Descreva o relatório..."
@@ -723,7 +756,7 @@ export function RelatorioForm({ relatorioId, initialData }: RelatorioFormProps) 
         <h3 className="text-lg font-semibold text-gray-900">Informações Adicionais</h3>
         
         <Textarea
-          label="Observações Gerais"
+          label="Observações Gerais *"
           {...register('observacoesGerais')}
           error={errors.observacoesGerais?.message}
           placeholder="Adicione observações gerais sobre o relatório..."
@@ -741,7 +774,7 @@ export function RelatorioForm({ relatorioId, initialData }: RelatorioFormProps) 
         />
 
         <Textarea
-          label="Recomendações Finais"
+          label="Recomendações Finais *"
           {...register('recomendacoes')}
           error={errors.recomendacoes?.message}
           placeholder="Adicione recomendações finais..."
@@ -763,9 +796,13 @@ export function RelatorioForm({ relatorioId, initialData }: RelatorioFormProps) 
         <Button
           type="button"
           variant="outline"
-          onClick={() => {
+          onClick={async () => {
             setValue('status', 'RASCUNHO')
-            handleSubmit(onSubmit)()
+            // Valida todos os campos antes de submeter
+            const isValid = await trigger()
+            if (isValid) {
+              handleSubmit(onSubmit)()
+            }
           }}
           disabled={isLoading}
         >
@@ -775,9 +812,13 @@ export function RelatorioForm({ relatorioId, initialData }: RelatorioFormProps) 
         {relatorioId && (
           <Button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               setValue('status', 'FINALIZADO')
-              handleSubmit(onSubmit)()
+              // Valida todos os campos antes de submeter
+              const isValid = await trigger()
+              if (isValid) {
+                handleSubmit(onSubmit)()
+              }
             }}
             disabled={isLoading}
           >
